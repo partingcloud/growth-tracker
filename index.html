@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4a90d9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="成长记录">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>成长记录</title>
+<style>
+:root{--pri:#4a90d9;--pri-d:#3a7bc0;--bg:#f4f6fa;--card:#fff;--text:#1f2937;--muted:#8a94a6;--line:#e6eaf0;--ok:#22a06b;--warn:#e8a33d;--danger:#e05a5a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;padding-bottom:calc(70px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#4a90d9,#5aa9e6);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 10px rgba(74,144,217,.25)}
+header h1{font-size:17px;margin:0;font-weight:600}
+header .sub{font-size:12px;opacity:.85}
+main{padding:12px}
+.page{display:none}.page.active{display:block}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(20,40,80,.06)}
+.card h2{font-size:14px;margin:0 0 10px;font-weight:600;color:var(--text)}
+.card h2 small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+.btn{border:none;border-radius:10px;padding:11px 16px;font-size:14px;font-family:inherit;cursor:pointer;font-weight:500}
+.btn.primary{background:var(--pri);color:#fff}.btn.primary:active{background:var(--pri-d)}
+.btn.ghost{background:#eef2f8;color:#4a5a70}
+.btn.small{padding:7px 12px;font-size:13px;border-radius:8px}
+.btn.danger{background:#fdecec;color:var(--danger)}
+.btn.block{width:100%}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#f7f9fc;border-radius:12px;padding:12px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font-size:22px;font-weight:600;color:var(--pri);line-height:1.2}
+.stat .v small{font-size:12px;font-weight:400;color:var(--muted);margin-left:2px}
+.stat .d{font-size:11px;color:var(--muted);margin-top:2px}
+.item{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);gap:10px}
+.item:last-child{border-bottom:none}
+.item .main{flex:1;min-width:0}
+.item .t1{font-size:14px;font-weight:500}
+.item .t2{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-all}
+.item .right{font-size:13px;color:var(--pri);font-weight:600;white-space:nowrap}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 10px}
+nav#tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;display:flex;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav#tabbar button{flex:1;background:none;border:none;padding:8px 0 7px;font-size:11px;color:var(--muted);font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav#tabbar button .ic{font-size:19px;line-height:1}
+nav#tabbar button.on{color:var(--pri);font-weight:600}
+canvas.chart{width:100%;display:block}
+.seg{display:flex;background:#eef2f8;border-radius:10px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:none;background:none;padding:8px 4px;border-radius:8px;font-size:13px;font-family:inherit;color:#5b6b80;cursor:pointer;white-space:nowrap}
+.seg button.on{background:#fff;color:var(--pri);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.badge{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;background:#eef2f8;color:#5b6b80;margin-left:6px;vertical-align:middle}
+.badge.demo{background:#fff4e0;color:#b5791a}
+.badge.ok{background:#e6f6ee;color:var(--ok)}
+.badge.due{background:#fdecec;color:var(--danger)}
+.modal-mask{position:fixed;inset:0;background:rgba(15,25,40,.45);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;max-height:88vh;display:flex;flex-direction:column;animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:translateY(0);opacity:1}}
+.modal-title{padding:16px 16px 8px;font-size:16px;font-weight:600}
+.modal-body{padding:4px 16px 8px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-actions{display:flex;gap:10px;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.modal-actions .btn{flex:1}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;color:#5b6b80;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;border:1px solid #dbe2ec;border-radius:10px;padding:11px 12px;font-size:15px;font-family:inherit;background:#fafbfd;color:var(--text)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--pri);background:#fff}
+.field textarea{min-height:64px;resize:vertical}
+.tooth-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.tooth{font-size:11px;padding:7px 6px;border-radius:8px;background:#eef2f8;color:#5b6b80;text-align:center;border:1px solid transparent}
+.tooth.got{background:#e6f6ee;color:var(--ok);border-color:#bfe8d4;font-weight:600}
+.note{font-size:12px;color:var(--muted);line-height:1.6;background:#f7f9fc;border-radius:10px;padding:10px;margin-top:8px}
+.warnbox{font-size:12px;color:#8a6410;background:#fff8e8;border:1px solid #f2e0b6;border-radius:10px;padding:10px;line-height:1.6}
+.legend{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-top:8px;flex-wrap:wrap;align-items:center}
+.legend i{display:inline-block;width:14px;vertical-align:middle;margin-right:3px}
+.avatar{width:58px;height:58px;border-radius:50%;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;position:relative;cursor:pointer;border:2px solid #fff;box-shadow:0 2px 6px rgba(20,40,80,.18);flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar:active{transform:scale(.96)}
+.avatar .edit{position:absolute;right:-2px;bottom:-2px;width:20px;height:20px;border-radius:50%;background:var(--pri);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;line-height:1}
+.mini-avatar{width:38px;height:38px;border-radius:50%;background:#eef2f8;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;flex-shrink:0;border:1px solid var(--line)}
+.mini-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1 id="hTitle">成长记录</h1>
+    <div class="sub" id="hSub"></div>
+  </div>
+  <button class="btn small" style="background:rgba(255,255,255,.2);color:#fff" id="btnSwitch">切换</button>
+</header>
+
+<main>
+  <section class="page active" id="page-home"></section>
+  <section class="page" id="page-growth"></section>
+  <section class="page" id="page-health"></section>
+  <section class="page" id="page-settings"></section>
+</main>
+
+<nav id="tabbar">
+  <button data-tab="home" class="on"><span class="ic">🏠</span>概览</button>
+  <button data-tab="growth"><span class="ic">📈</span>生长</button>
+  <button data-tab="health"><span class="ic">💊</span>健康</button>
+  <button data-tab="settings"><span class="ic">⚙️</span>设置</button>
+</nav>
+
+<div id="modal-root"></div>
+
+<script>
+/* ============ 应用信息（按需修改） ============ */
+const APP_INFO={
+  name:'成长记录',
+  version:'1.0.0',
+  author:'可乐他爸',
+  year:2026,
+  license:'保留所有权利',
+  contact:1283886@qq.com''
+};
+
+/* ============ 常量 ============ */
+const KEY='growtrack.v1';
+const STD_KEY='growtrack.standards.v1';
+
+const VAX_PLAN=[
+ {m:0,items:['乙肝疫苗 第1剂','卡介苗 第1剂']},
+ {m:1,items:['乙肝疫苗 第2剂']},
+ {m:2,items:['脊灰灭活疫苗 第1剂']},
+ {m:3,items:['脊灰灭活疫苗 第2剂']},
+ {m:4,items:['脊灰减毒活疫苗 第3剂','百白破疫苗 第1剂']},
+ {m:5,items:['百白破疫苗 第2剂']},
+ {m:6,items:['百白破疫苗 第3剂','乙肝疫苗 第3剂','A群流脑多糖疫苗 第1剂']},
+ {m:8,items:['麻腮风疫苗 第1剂','乙脑减毒活疫苗 第1剂']},
+ {m:9,items:['A群流脑多糖疫苗 第2剂']},
+ {m:18,items:['百白破疫苗 第4剂','麻腮风疫苗 第2剂','甲肝减毒活疫苗 第1剂']},
+ {m:24,items:['乙脑减毒活疫苗 第2剂']},
+ {m:36,items:['A群C群流脑多糖疫苗 第1剂']},
+ {m:48,items:['脊灰减毒活疫苗 第4剂']},
+ {m:72,items:['白破疫苗 第1剂','A群C群流脑多糖疫苗 第2剂']}
+];
+
+const TEETH=[
+ '上颌 乳中切牙 左','上颌 乳中切牙 右','上颌 乳侧切牙 左','上颌 乳侧切牙 右',
+ '上颌 乳尖牙 左','上颌 乳尖牙 右','上颌 第一乳磨牙 左','上颌 第一乳磨牙 右',
+ '上颌 第二乳磨牙 左','上颌 第二乳磨牙 右',
+ '下颌 乳中切牙 左','下颌 乳中切牙 右','下颌 乳侧切牙 左','下颌 乳侧切牙 右',
+ '下颌 乳尖牙 左','下颌 乳尖牙 右','下颌 第一乳磨牙 左','下颌 第一乳磨牙 右',
+ '下颌 第二乳磨牙 左','下颌 第二乳磨牙 右'
+];
+
+const MILESTONES=[
+ {k:'neck',     n:'俯卧抬头',      tip:'约 1–3 月龄'},
+ {k:'roll',     n:'翻身',          tip:'约 4–6 月龄'},
+ {k:'sit',      n:'独坐',          tip:'约 6–8 月龄'},
+ {k:'crawl',    n:'爬行',          tip:'约 7–10 月龄'},
+ {k:'standsup', n:'扶站',          tip:'约 9–11 月龄'},
+ {k:'stand',    n:'独站',          tip:'约 10–13 月龄'},
+ {k:'walk',     n:'独走',          tip:'约 12–15 月龄'},
+ {k:'word',     n:'有意识叫爸妈',  tip:'约 12–18 月龄'},
+ {k:'run',      n:'会跑',          tip:'约 18–24 月龄'},
+ {k:'sentence', n:'说短句',        tip:'约 24–36 月龄'}
+];
+
+/* ============ 数据层 ============ */
+let db=loadDB();
+function loadDB(){
+  let d=null;
+  try{const r=localStorage.getItem(KEY);if(r)d=JSON.parse(r);}catch(e){}
+  if(!d)d={children:[],growth:[],vaccines:[],illnesses:[],teeth:[],milestones:[],currentChildId:null};
+  ['children','growth','vaccines','illnesses','teeth','milestones'].forEach(k=>{if(!Array.isArray(d[k]))d[k]=[];});
+  return d;
+}
+function saveDB(){try{localStorage.setItem(KEY,JSON.stringify(db));return true;}catch(e){alert('保存失败：本地存储空间可能已满，可在设置中导出备份后清理旧照片');return false;}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+function curChild(){return db.children.find(c=>c.id===db.currentChildId)||null;}
+function childEmoji(c){return c.sex==='male'?'👦':'👧';}
+
+/* ============ 工具 ============ */
+function today(){const d=new Date();return d.toISOString().slice(0,10);}
+function ageMonths(birth,date){
+  const b=new Date(birth+'T00:00:00'),d=new Date((date||today())+'T00:00:00');
+  return (d-b)/(1000*60*60*24*30.4375);
+}
+function fmtAge(m){
+  if(!isFinite(m)||m<0)return '—';
+  const y=Math.floor(m/12),mo=Math.round(m%12);
+  if(y>0)return mo>0?y+'岁'+mo+'个月':y+'岁';
+  return Math.round(m)+'个月';
+}
+function fmtNum(v){return (Math.round(v*10)/10).toString();}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function addMonths(dateStr,m){
+  const d=new Date(dateStr+'T00:00:00');d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10);
+}
+
+/* ============ 头像：相册选择 + 裁剪压缩 ============ */
+function pickAvatar(childId){
+  const id=childId||db.currentChildId;
+  const c=db.children.find(x=>x.id===id);
+  if(!c){alert('请先添加宝宝档案');return;}
+  const inp=document.createElement('input');
+  inp.type='file';
+  inp.accept='image/*';
+  inp.style.display='none';
+  document.body.appendChild(inp);
+  inp.onchange=function(){
+    const f=inp.files&&inp.files[0];
+    if(!f){inp.remove();return;}
+    if(!/^image\//.test(f.type)){alert('请选择图片文件');inp.remove();return;}
+    compressSquareImage(f,256,function(dataUrl){
+      inp.remove();
+      if(!dataUrl){alert('图片处理失败，请换一张试试');return;}
+      c.avatar=dataUrl;
+      if(saveDB())renderAll();
+    });
+  };
+  inp.click();
+}
+
+function compressSquareImage(file,size,cb){
+  const rd=new FileReader();
+  rd.onload=function(){
+    const img=new Image();
+    img.onload=function(){
+      try{
+        const side=Math.min(img.width,img.height);
+        const sx=(img.width-side)/2, sy=(img.height-side)/2;
+        const cv=document.createElement('canvas');
+        cv.width=size;cv.height=size;
+        const ctx=cv.getContext('2d');
+        ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+        ctx.drawImage(img,sx,sy,side,side,0,0,size,size);
+        cb(cv.toDataURL('image/jpeg',0.82));
+      }catch(err){cb(null);}
+    };
+    img.onerror=function(){cb(null);};
+    img.src=rd.result;
+  };
+  rd.onerror=function(){cb(null);};
+  rd.readAsDataURL(file);
+}
+
+function avatarHTML(c,cls,extra){
+  const inner=c.avatar?'<img src="'+c.avatar+'" alt="">':childEmoji(c);
+  return '<div class="'+cls+'" data-act="pickAvatar" data-avatar-child="'+c.id+'"'+(extra||'')+'>'+inner+(cls==='avatar'?'<span class="edit">✎</span>':'')+'</div>';
+}
+
+/* ============ 演示标准数据（非医学参考值） ============ */
+const ANCHOR={
+ height:{
+  male:[[0,49.9],[3,61.4],[6,67.6],[9,72.0],[12,75.7],[18,82.3],[24,87.8],[30,91.9],[36,96.1],[48,103.3],[60,110.0]],
+  female:[[0,49.1],[3,59.8],[6,65.7],[9,70.1],[12,74.0],[18,80.7],[24,86.4],[30,90.6],[36,95.1],[48,102.7],[60,109.4]]
+ },
+ weight:{
+  male:[[0,3.3],[3,6.4],[6,8.0],[9,9.0],[12,9.6],[18,10.9],[24,12.2],[30,13.3],[36,14.3],[48,16.3],[60,18.3]],
+  female:[[0,3.2],[3,5.8],[6,7.3],[9,8.2],[12,8.9],[18,10.2],[24,11.5],[30,12.7],[36,13.9],[48,16.1],[60,18.2]]
+ }
+};
+function lerpAnchor(arr,m){
+  if(m<=arr[0][0])return arr[0][1];
+  if(m>=arr[arr.length-1][0])return arr[arr.length-1][1];
+  for(let i=0;i<arr.length-1;i++){
+    const a=arr[i][0],va=arr[i][1],b=arr[i+1][0],vb=arr[i+1][1];
+    if(m>=a&&m<=b)return va+(vb-va)*((m-a)/(b-a));
+  }
+  return arr[arr.length-1][1];
+}
+function buildDemoBands(type,sex){
+  const out=[];
+  for(let m=0;m<=60;m++){
+    const p50=lerpAnchor(ANCHOR[type][sex],m);
+    const spread=type==='height'?(0.05*p50+0.6):(0.13*p50+0.15);
+    out.push({m,p3:p50-spread,p15:p50-spread*0.55,p50,p85:p50+spread*0.55,p97:p50+spread});
+  }
+  return out;
+}
+
+/* ============ 标准数据管理 ============ */
+let standards=loadStandards();
+function loadStandards(){
+  try{const r=localStorage.getItem(STD_KEY);if(r)return JSON.parse(r);}catch(e){}
+  return null;
+}
+function getBands(type,sex){
+  if(standards&&standards[type]&&standards[type][sex]&&standards[type][sex].length){
+    return {bands:standards[type][sex],demo:false,source:standards.source||'已导入标准'};
+  }
+  return {bands:buildDemoBands(type,sex),demo:true,source:'演示数据'};
+}
+
+/* ============ 图表绘制 ============ */
+function niceStep(raw){
+  const p=Math.pow(10,Math.floor(Math.log10(raw)));
+  const n=raw/p;
+  if(n<=1)return p;if(n<=2)return 2*p;if(n<=5)return 5*p;return 10*p;
+}
+function drawChart(cv,cfg){
+  if(!cv||!cv.clientWidth)return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth,H=cfg.height||240;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const pad={l:38,r:14,t:16,b:26};
+  const pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  const X=m=>pad.l+pw*(m/cfg.xMax);
+  const Y=v=>pad.t+ph*(1-(v-cfg.yMin)/(cfg.yMax-cfg.yMin));
+  const bands=cfg.bands;
+
+  const yStep=niceStep((cfg.yMax-cfg.yMin)/4);
+  ctx.font='10px sans-serif';ctx.textBaseline='middle';
+  for(let v=Math.ceil(cfg.yMin/yStep)*yStep;v<=cfg.yMax;v+=yStep){
+    const y=Y(v);
+    ctx.strokeStyle='#eef1f6';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillStyle='#9aa4b2';ctx.textAlign='right';ctx.fillText(fmtNum(v),pad.l-6,y);
+  }
+  const xStep=cfg.xMax<=24?6:(cfg.xMax<=60?12:24);
+  ctx.textAlign='center';ctx.textBaseline='top';
+  for(let m=0;m<=cfg.xMax;m+=xStep){
+    ctx.fillStyle='#9aa4b2';ctx.fillText(m+'月',X(m),H-pad.b+7);
+  }
+
+  function refLine(key,color,w,dash){
+    ctx.beginPath();
+    bands.forEach((b,i)=>i?ctx.lineTo(X(b.m),Y(b[key])):ctx.moveTo(X(b.m),Y(b[key])));
+    ctx.strokeStyle=color;ctx.lineWidth=w;ctx.setLineDash(dash||[]);
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  refLine('p3','#b6d0e8',1);
+  refLine('p97','#b6d0e8',1);
+  refLine('p15','#8db9e0',1);
+  refLine('p85','#8db9e0',1);
+  refLine('p50','#5f9fd8',1.2,[5,4]);
+
+  const pts=cfg.points.filter(p=>p.y!=null&&isFinite(p.y)).sort((a,b)=>a.x-b.x);
+  if(pts.length){
+    ctx.beginPath();
+    pts.forEach((p,i)=>i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y)));
+    ctx.strokeStyle='#e8722d';ctx.lineWidth=2.2;ctx.lineJoin='round';ctx.stroke();
+    pts.forEach(p=>{
+      ctx.beginPath();ctx.arc(X(p.x),Y(p.y),3.6,0,Math.PI*2);
+      ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#e8722d';ctx.lineWidth=2;ctx.stroke();
+    });
+  }else{
+    ctx.fillStyle='#b6c0cd';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('暂无数据',pad.l+pw/2,pad.t+ph/2);
+  }
+}
+
+/* ============ 弹窗表单 ============ */
+function openForm(title,fields,onSubmit){
+  const root=document.getElementById('modal-root');
+  const body=fields.map(f=>{
+    const v=f.value==null?'':esc(f.value);
+    if(f.type==='select'){
+      return '<div class="field"><label>'+esc(f.label)+'</label><select name="'+f.name+'">'+
+        f.options.map(o=>'<option value="'+esc(o.value)+'"'+(String(o.value)===String(f.value)?' selected':'')+'>'+esc(o.label)+'</option>').join('')+
+        '</select></div>';
+    }
+    if(f.type==='textarea'){
+      return '<div class="field"><label>'+esc(f.label)+'</label><textarea name="'+f.name+'" placeholder="'+esc(f.placeholder||'')+'">'+v+'</textarea></div>';
+    }
+    return '<div class="field"><label>'+esc(f.label)+'</label><input name="'+f.name+'" type="'+(f.type||'text')+'" '+(f.type==='number'?'inputmode="decimal" step="0.1"':'')+' value="'+v+'" placeholder="'+esc(f.placeholder||'')+'"></div>';
+  }).join('');
+  root.innerHTML='<div class="modal-mask"><div class="modal">'+
+    '<div class="modal-title">'+esc(title)+'</div>'+
+    '<div class="modal-body">'+body+'</div>'+
+    '<div class="modal-actions"><button class="btn ghost" data-act="cancel">取消</button><button class="btn primary" data-act="ok">保存</button></div>'+
+    '</div></div>';
+  const mask=root.querySelector('.modal-mask');
+  const close=()=>{root.innerHTML='';};
+  mask.addEventListener('click',e=>{
+    if(e.target.dataset.act==='cancel'||e.target===mask){close();return;}
+    if(e.target.dataset.act==='ok'){
+      const data={};
+      fields.forEach(f=>{
+        const el=root.querySelector('[name="'+f.name+'"]');
+        data[f.name]=el?el.value.trim():'';
+      });
+      const err=onSubmit(data);
+      if(err){alert(err);return;}
+      close();
+    }
+  });
+}
+
+/* ============ 页面渲染 ============ */
+let activeTab='home',healthTab='vaccine',growthType='height';
+
+function renderAll(){
+  renderHeader();renderHome();renderGrowth();renderHealth();renderSettings();
+}
+function renderHeader(){
+  const c=curChild();
+  document.getElementById('hTitle').textContent=c?c.name:'成长记录';
+  document.getElementById('hSub').textContent=c?('生日 '+c.birthDate+' · '+fmtAge(ageMonths(c.birthDate))):'还没有添加宝宝';
+  document.getElementById('btnSwitch').style.display=(c&&db.children.length>1)?'block':'none';
+}
+
+/* ---- 概览 ---- */
+function renderHome(){
+  const el=document.getElementById('page-home');
+  const c=curChild();
+  if(!c){
+    el.innerHTML='<div class="card"><div class="empty">'+
+      '<div style="font-size:40px;margin-bottom:8px">👶</div>'+
+      '<div style="margin-bottom:14px">先添加一个宝宝档案，开始记录成长</div>'+
+      '<button class="btn primary" data-act="addChild">添加宝宝</button></div></div>';
+    return;
+  }
+  const g=db.growth.filter(x=>x.childId===c.id).sort((a,b)=>a.date<b.date?-1:1);
+  const last=g[g.length-1], prev=g[g.length-2];
+  const diff=(a,b,u)=>(a!=null&&b!=null&&isFinite(a)&&isFinite(b))?((a-b>=0?'+':'')+fmtNum(a-b)+u):'—';
+
+  const events=[];
+  g.forEach(x=>events.push({d:x.date,t:'生长记录',s:'身高 '+(x.height?x.height+'cm':'-')+' · 体重 '+(x.weight?x.weight+'kg':'-')}));
+  db.illnesses.filter(x=>x.childId===c.id).forEach(x=>events.push({d:x.startDate,t:'生病',s:(x.symptoms||'不适')+(x.temp?' · 体温'+x.temp+'℃':'')}));
+  db.teeth.filter(x=>x.childId===c.id).forEach(x=>events.push({d:x.date,t:'出牙',s:x.tooth}));
+  db.vaccines.filter(x=>x.childId===c.id).forEach(x=>events.push({d:x.date,t:'接种',s:x.key}));
+  db.milestones.filter(x=>x.childId===c.id).forEach(x=>{
+    const m=MILESTONES.find(y=>y.k===x.key);
+    events.push({d:x.date,t:'发育里程碑',s:m?m.n:x.key});
+  });
+  events.sort((a,b)=>a.d<b.d?1:-1);
+
+  el.innerHTML=
+  '<div class="card">'+
+    '<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:nowrap">'+
+      '<div style="min-width:0"><div style="font-size:18px;font-weight:600">'+esc(c.name)+'</div>'+
+      '<div style="font-size:12px;color:var(--muted)">'+(c.sex==='male'?'男宝':'女宝')+' · '+fmtAge(ageMonths(c.birthDate))+'</div></div>'+
+      avatarHTML(c,'avatar')+
+    '</div>'+
+    '<div class="grid2">'+
+      '<div class="stat"><div class="k">最新身高</div><div class="v">'+(last&&last.height?last.height:'—')+'<small>cm</small></div>'+
+        '<div class="d">'+(last&&last.height?('较上次 '+diff(last.height,prev&&prev.height,'cm')):'暂无记录')+'</div></div>'+
+      '<div class="stat"><div class="k">最新体重</div><div class="v">'+(last&&last.weight?last.weight:'—')+'<small>kg</small></div>'+
+        '<div class="d">'+(last&&last.weight?('较上次 '+diff(last.weight,prev&&prev.weight,'kg')):'暂无记录')+'</div></div>'+
+    '</div>'+
+    (last?'<div style="font-size:12px;color:var(--muted);margin-top:10px">最近测量：'+last.date+'（'+fmtAge(ageMonths(c.birthDate,last.date))+'）</div>':'')+
+  '</div>'+
+
+  '<div class="card"><h2>快捷记录</h2><div class="row">'+
+    '<button class="btn primary small" data-act="addGrowth">📏 身高体重</button>'+
+    '<button class="btn ghost small" data-act="addIllness">🤒 生病</button>'+
+    '<button class="btn ghost small" data-act="addTooth">🦷 出牙</button>'+
+    '<button class="btn ghost small" data-act="goMile">🎯 发育</button>'+
+  '</div></div>'+
+
+  '<div class="card"><h2>最近动态</h2>'+
+    (events.length?events.slice(0,8).map(e=>'<div class="item"><div class="main"><div class="t1">'+esc(e.t)+'</div><div class="t2">'+esc(e.s)+'</div></div><div class="right">'+e.d+'</div></div>').join(''):'<div class="empty">还没有记录</div>')+
+  '</div>';
+}
+
+/* ---- 生长 ---- */
+function renderGrowth(){
+  const el=document.getElementById('page-growth');
+  const c=curChild();
+  if(!c){el.innerHTML='<div class="card"><div class="empty">请先在设置中添加宝宝</div></div>';return;}
+  const isH=growthType==='height';
+  const std=getBands(isH?'height':'weight',c.sex);
+
+  const recs=db.growth.filter(x=>x.childId===c.id).sort((a,b)=>a.date<b.date?-1:1);
+  const points=recs.map(r=>({x:ageMonths(c.birthDate,r.date),y:isH?parseFloat(r.height):parseFloat(r.weight),date:r.date})).filter(p=>isFinite(p.y));
+  const maxAge=Math.max(points.length?points[points.length-1].x:0,12);
+  const xMax=Math.min(Math.max(Math.ceil(maxAge/6)*6,24),std.bands[std.bands.length-1].m);
+  const visBands=std.bands.filter(b=>b.m<=xMax);
+
+  const vals=[];
+  visBands.forEach(b=>{vals.push(b.p3,b.p97);});
+  points.forEach(p=>{if(p.x<=xMax)vals.push(p.y);});
+  let yMin=Math.min.apply(null,vals),yMax=Math.max.apply(null,vals);
+  const padY=(yMax-yMin)*0.1||2;
+  yMin-=padY;yMax+=padY;
+
+  el.innerHTML=
+  '<div class="seg">'+
+    '<button data-growth="height" class="'+(isH?'on':'')+'">身高曲线</button>'+
+    '<button data-growth="weight" class="'+(!isH?'on':'')+'">体重曲线</button>'+
+  '</div>'+
+  '<div class="card">'+
+    '<h2>'+(isH?'身高-年龄':'体重-年龄')+'<small>'+esc(std.source)+'</small>'+(std.demo?'<span class="badge demo">演示数据</span>':'')+'</h2>'+
+    '<canvas class="chart" id="chart"></canvas>'+
+    '<div class="legend">'+
+      '<span><i style="border-top:1px solid #b6d0e8"></i>P3 / P97</span>'+
+      '<span><i style="border-top:1px solid #8db9e0"></i>P15 / P85</span>'+
+      '<span><i style="border-top:1px dashed #5f9fd8"></i>P50 中位</span>'+
+      '<span><i style="border-top:2px solid #e8722d"></i>宝宝</span>'+
+    '</div>'+
+    (std.demo?'<div class="warnbox" style="margin-top:10px">当前为标准曲线的<strong>演示数据</strong>，仅用于展示图表效果，<strong>不可用于判断生长发育</strong>。请在「设置 → 标准曲线数据」中导入权威数据。</div>':'')+
+  '</div>'+
+
+  '<div class="card"><h2>测量记录 <small>共 '+recs.length+' 条</small></h2>'+
+    (recs.length?recs.slice().reverse().map(r=>'<div class="item">'+
+      '<div class="main"><div class="t1">'+(r.height?r.height+' cm':'')+(r.height&&r.weight?' · ':'')+(r.weight?r.weight+' kg':'')+(r.headCirc?' · 头围 '+r.headCirc+' cm':'')+'</div>'+
+      '<div class="t2">'+r.date+' · '+fmtAge(ageMonths(c.birthDate,r.date))+(r.note?' · '+esc(r.note):'')+'</div></div>'+
+      '<button class="btn danger small" data-del-growth="'+r.id+'">删</button></div>').join(''):'<div class="empty">还没有测量记录</div>')+
+    '<button class="btn primary block" style="margin-top:12px" data-act="addGrowth">+ 添加测量</button>'+
+  '</div>';
+
+  requestAnimationFrame(()=>{
+    const cv=document.getElementById('chart');
+    if(cv)drawChart(cv,{bands:visBands,points:points,xMax:xMax,yMin:yMin,yMax:yMax});
+  });
+}
+
+/* ---- 健康 ---- */
+function renderHealth(){
+  const el=document.getElementById('page-health');
+  const c=curChild();
+  if(!c){el.innerHTML='<div class="card"><div class="empty">请先在设置中添加宝宝</div></div>';return;}
+
+  let body='';
+  if(healthTab==='vaccine')body=renderVaccine(c);
+  else if(healthTab==='illness')body=renderIllness(c);
+  else if(healthTab==='tooth')body=renderTooth(c);
+  else body=renderMilestone(c);
+
+  el.innerHTML='<div class="seg">'+
+    '<button data-health="vaccine" class="'+(healthTab==='vaccine'?'on':'')+'">疫苗</button>'+
+    '<button data-health="illness" class="'+(healthTab==='illness'?'on':'')+'">生病</button>'+
+    '<button data-health="tooth" class="'+(healthTab==='tooth'?'on':'')+'">出牙</button>'+
+    '<button data-health="mile" class="'+(healthTab==='mile'?'on':'')+'">发育</button>'+
+  '</div>'+body;
+}
+
+function renderVaccine(c){
+  const done={};
+  db.vaccines.filter(v=>v.childId===c.id).forEach(v=>{done[v.key]=v;});
+  const nowAge=ageMonths(c.birthDate);
+  let html='<div class="card"><h2>国家免疫规划疫苗<small>按出生日期自动排期</small></h2>';
+  VAX_PLAN.forEach(g=>{
+    html+='<div style="margin-top:10px;font-size:12px;color:var(--muted);font-weight:600">'+(g.m<12?g.m+'月龄':(g.m/12)+'岁')+' <span style="font-weight:400">· 计划 '+addMonths(c.birthDate,g.m)+'</span></div>';
+    g.items.forEach(k=>{
+      const rec=done[k];
+      const due=!rec&&nowAge>=g.m;
+      html+='<div class="item"><div class="main">'+
+        '<div class="t1">'+esc(k)+' '+(rec?'<span class="badge ok">已接种</span>':(due?'<span class="badge due">待接种</span>':'<span class="badge">未到时间</span>'))+'</div>'+
+        '<div class="t2">'+(rec?('接种日期 '+rec.date+(rec.note?' · '+esc(rec.note):'')):'计划日期 '+addMonths(c.birthDate,g.m))+'</div></div>'+
+        (rec?'<button class="btn danger small" data-del-vax="'+rec.id+'">撤销</button>':'<button class="btn primary small" data-vax="'+esc(k)+'">标记</button>')+
+        '</div>';
+    });
+  });
+  html+='<div class="note">接种程序以国家免疫规划为准，各地执行细节和自费疫苗请以当地接种门诊安排为准。</div></div>';
+  return html;
+}
+
+function renderIllness(c){
+  const list=db.illnesses.filter(x=>x.childId===c.id).sort((a,b)=>a.startDate<b.startDate?1:-1);
+  return '<div class="card"><h2>生病记录 <small>共 '+list.length+' 次</small></h2>'+
+  (list.length?list.map(x=>'<div class="item"><div class="main">'+
+    '<div class="t1">'+esc(x.symptoms||'不适')+(x.temp?' · '+x.temp+'℃':'')+'</div>'+
+    '<div class="t2">'+x.startDate+(x.endDate?' 至 '+x.endDate:' 起')+(x.doctor?' · 已就医':'')+(x.meds?' · '+esc(x.meds):'')+(x.note?' · '+esc(x.note):'')+'</div></div>'+
+    '<button class="btn danger small" data-del-ill="'+x.id+'">删</button></div>').join(''):'<div class="empty">还没有生病记录</div>')+
+  '<button class="btn primary block" style="margin-top:12px" data-act="addIllness">+ 添加记录</button></div>';
+}
+
+function renderTooth(c){
+  const got={};
+  db.teeth.filter(x=>x.childId===c.id).forEach(x=>{got[x.tooth]=x;});
+  return '<div class="card"><h2>出牙记录 <small>已萌出 '+Object.keys(got).length+' / 20 颗</small></h2>'+
+  '<div class="tooth-grid" style="margin:10px 0">'+
+    TEETH.map(t=>'<div class="tooth '+(got[t]?'got':'')+'" data-tooth="'+esc(t)+'">'+esc(t)+(got[t]?'<br><span style="font-size:10px">'+got[t].date+'</span>':'')+'</div>').join('')+
+  '</div>'+
+  '<button class="btn primary block" data-act="addTooth">+ 记录出牙</button>'+
+  '<div class="note">出牙时间和顺序个体差异很大，通常 6 个月左右开始、2 岁半到 3 岁出齐 20 颗乳牙，早或晚几个月都常见。</div></div>';
+}
+
+function renderMilestone(c){
+  const map={};
+  db.milestones.filter(x=>x.childId===c.id).forEach(x=>{map[x.key]=x;});
+  const doneCount=Object.keys(map).length;
+  let html='<div class="card"><h2>发育里程碑 <small>已记录 '+doneCount+' / '+MILESTONES.length+'</small></h2>';
+  MILESTONES.forEach(m=>{
+    const rec=map[m.k];
+    html+='<div class="item"><div class="main">'+
+      '<div class="t1">'+m.n+(rec?' <span class="badge ok">已记录</span>':'')+'</div>'+
+      '<div class="t2">'+(rec?(rec.date+' · '+fmtAge(ageMonths(c.birthDate,rec.date))+(rec.note?' · '+esc(rec.note):'')):('参考月龄 '+m.tip))+'</div></div>'+
+      (rec?'<button class="btn danger small" data-del-mile="'+rec.id+'">删</button>':'<button class="btn primary small" data-mile="'+m.k+'">记录</button>')+
+      '</div>';
+  });
+  html+='<div class="note">上面标注的月龄仅为<strong>常见参考范围</strong>，不是医学标准。每个孩子发育节奏差异很大，早或晚几个月都很常见。若对孩子的发育有疑虑，请咨询儿科或儿童保健医生。</div>';
+  html+='</div>';
+  return html;
+}
+
+/* ---- 设置 ---- */
+function renderSettings(){
+  const el=document.getElementById('page-settings');
+  const std=standards;
+  el.innerHTML=
+  '<div class="card"><h2>宝宝档案</h2>'+
+    (db.children.length?db.children.map(c=>'<div class="item">'+
+      avatarHTML(c,'mini-avatar')+
+      '<div class="main"><div class="t1">'+esc(c.name)+(c.id===db.currentChildId?' <span class="badge">当前</span>':'')+'</div>'+
+      '<div class="t2">'+c.birthDate+' · '+(c.sex==='male'?'男':'女')+'</div></div>'+
+      '<div class="row" style="flex-wrap:nowrap">'+
+        (c.id!==db.currentChildId?'<button class="btn ghost small" data-switch="'+c.id+'">切换</button>':'')+
+        '<button class="btn ghost small" data-act="pickAvatar" data-avatar-child="'+c.id+'">头像</button>'+
+        (c.avatar?'<button class="btn ghost small" data-act="clearAvatar" data-avatar-child="'+c.id+'">移除</button>':'')+
+        '<button class="btn danger small" data-del-child="'+c.id+'">删</button>'+
+      '</div></div>').join(''):'<div class="empty">还没有宝宝档案</div>')+
+    '<button class="btn primary block" style="margin-top:12px" data-act="addChild">+ 添加宝宝</button>'+
+    '<div class="note">点击宝宝头像可从相册选择照片，图片会自动裁剪为圆形显示并压缩保存。</div>'+
+  '</div>'+
+
+  '<div class="card"><h2>安装到手机主屏幕</h2>'+
+    '<div style="font-size:12px;color:var(--muted);line-height:1.7">要让程序像 App 一样有图标、点一下启动，请把 <b>index.html</b> 与本页生成的 4 个文件一起放到支持 HTTPS 的静态空间（GitHub Pages、Vercel、Netlify 均可免费使用），然后用手机浏览器打开链接。</div>'+
+    '<div class="row" style="margin-top:10px">'+
+      '<button class="btn ghost small" data-act="dlIcon192">图标 192</button>'+
+      '<button class="btn ghost small" data-act="dlIcon512">图标 512</button>'+
+      '<button class="btn ghost small" data-act="dlManifest">manifest.json</button>'+
+      '<button class="btn ghost small" data-act="dlSW">sw.js</button>'+
+    '</div>'+
+    '<div class="note">下载后与 index.html 放在同一目录。安卓 Chrome：菜单 →「安装应用 / 添加到主屏幕」；iOS Safari：分享 →「添加到主屏幕」。</div>'+
+  '</div>'+
+
+  '<div class="card"><h2>标准曲线数据 '+(std?'<span class="badge ok">已导入</span>':'<span class="badge demo">演示数据</span>')+'</h2>'+
+    '<div style="font-size:12px;color:var(--muted);line-height:1.7">当前：'+esc(std?(std.source||'自定义标准'):'内置演示数据（不可用于医学判断）')+'</div>'+
+    '<div class="row" style="margin-top:10px">'+
+      '<button class="btn ghost small" data-act="importStd">导入标准数据</button>'+
+      (std?'<button class="btn danger small" data-act="clearStd">恢复演示数据</button>':'')+
+    '</div>'+
+    '<div class="note">导入格式（JSON）：<br><code style="font-size:11px;word-break:break-all">{ "source":"WS/T 423-2022 7岁以下儿童生长标准", "height":{ "male":[{"m":0,"p3":46.1,"p15":47.9,"p50":50.4,"p85":52.9,"p97":54.7}], "female":[...] }, "weight":{ "male":[...], "female":[...] } }</code><br>m 为月龄，身高单位 cm，体重单位 kg。</div>'+
+  '</div>'+
+
+  '<div class="card"><h2>数据备份</h2><div class="row">'+
+    '<button class="btn ghost small" data-act="export">导出备份</button>'+
+    '<button class="btn ghost small" data-act="import">导入备份</button>'+
+  '</div><div class="note">数据仅保存在本机浏览器中，清除浏览器数据会丢失记录，建议定期导出备份文件保存到网盘或电脑。头像照片也会包含在备份文件中。</div></div>'+
+
+  '<div class="card"><h2>版权说明</h2>'+
+    '<div style="font-size:13px;line-height:1.9">'+
+      '<div style="font-weight:600;margin-bottom:2px">'+esc(APP_INFO.name)+' <span style="font-weight:400;color:var(--muted);font-size:12px">v'+esc(APP_INFO.version)+'</span></div>'+
+      '<div style="color:var(--text)">© '+APP_INFO.year+' '+esc(APP_INFO.author)+'。'+esc(APP_INFO.license)+'。</div>'+
+      (APP_INFO.contact?'<div style="color:var(--muted);font-size:12px">联系方式：'+esc(APP_INFO.contact)+'</div>':'')+
+    '</div>'+
+    '<div class="note">本程序为家庭日常记录工具，源代码由作者独立编写，未使用第三方库。未经作者许可，不得用于商业用途、不得去除本版权声明后二次分发。</div>'+
+    '<div class="note"><b>免责声明：</b>本工具不提供医疗诊断建议。程序内置的生长发育参考曲线、疫苗程序、出牙与里程碑月龄均为通用信息整理，不能替代专业评估。孩子的生长发育、疫苗接种和疾病处理，请以儿科或儿童保健医生的意见为准。</div>'+
+    '<div class="note"><b>数据说明：</b>所有记录仅保存在使用者本机的浏览器中，不上传任何服务器，作者无法访问。清除浏览器数据会导致记录丢失，请定期使用「数据备份」导出保存。</div>'+
+  '</div>';
+}
+
+/* ============ 图标与安装文件生成 ============ */
+const ICON_SVG='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">'
+ +'<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">'
+ +'<stop offset="0" stop-color="#5aa9e6"/><stop offset="1" stop-color="#3a7bc0"/>'
+ +'</linearGradient></defs>'
+ +'<rect width="512" height="512" rx="116" ry="116" fill="url(#g)"/>'
+ +'<path d="M116 356 L208 286 L296 316 L396 164" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>'
+ +'<circle cx="396" cy="164" r="36" fill="#ffffff"/>'
+ +'</svg>';
+
+function downloadBlob(blob,filename){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+}
+
+function downloadIcon(size){
+  const svgBlob=new Blob([ICON_SVG],{type:'image/svg+xml;charset=utf-8'});
+  const url=URL.createObjectURL(svgBlob);
+  const img=new Image();
+  img.onload=function(){
+    try{
+      const cv=document.createElement('canvas');
+      cv.width=size;cv.height=size;
+      const ctx=cv.getContext('2d');
+      ctx.drawImage(img,0,0,size,size);
+      URL.revokeObjectURL(url);
+      if(cv.toBlob){
+        cv.toBlob(function(b){
+          if(b)downloadBlob(b,'icon-'+size+'.png');
+          else alert('图标生成失败，请换用其他浏览器试试');
+        },'image/png');
+      }else{
+        const a=document.createElement('a');
+        a.href=cv.toDataURL('image/png');
+        a.download='icon-'+size+'.png';
+        a.click();
+      }
+    }catch(err){
+      URL.revokeObjectURL(url);
+      alert('图标生成失败：'+err.message);
+    }
+  };
+  img.onerror=function(){
+    URL.revokeObjectURL(url);
+    alert('图标生成失败，请换用其他浏览器试试');
+  };
+  img.src=url;
+}
+
+function downloadManifest(){
+  const m={
+    name:APP_INFO.name,
+    short_name:APP_INFO.name,
+    start_url:'./index.html',
+    scope:'./',
+    display:'standalone',
+    orientation:'portrait',
+    background_color:'#f4f6fa',
+    theme_color:'#4a90d9',
+    icons:[
+      {src:'icon-192.png',sizes:'192x192',type:'image/png',purpose:'any'},
+      {src:'icon-512.png',sizes:'512x512',type:'image/png',purpose:'any'}
+    ]
+  };
+  downloadBlob(new Blob([JSON.stringify(m,null,2)],{type:'application/json'}),'manifest.json');
+}
+
+const SW_JS=[
+"const CACHE='growtrack-v1';",
+"const ASSETS=['./index.html','./manifest.json'];",
+"self.addEventListener('install',e=>{",
+"  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()));",
+"});",
+"self.addEventListener('activate',e=>{",
+"  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));",
+"});",
+"self.addEventListener('fetch',e=>{",
+"  if(e.request.method!=='GET')return;",
+"  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{",
+"    const copy=resp.clone();",
+"    caches.open(CACHE).then(c=>c.put(e.request,copy)).catch(()=>{});",
+"    return resp;",
+"  }).catch(()=>caches.match('./index.html'))));",
+"});"
+].join('\n');
+
+function downloadSW(){
+  downloadBlob(new Blob([SW_JS],{type:'text/javascript'}),'sw.js');
+}
+
+/* ============ 事件绑定 ============ */
+document.getElementById('tabbar').addEventListener('click',e=>{
+  const btn=e.target.closest('button[data-tab]');if(!btn)return;
+  activeTab=btn.dataset.tab;
+  document.querySelectorAll('#tabbar button').forEach(b=>b.classList.toggle('on',b===btn));
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+activeTab));
+  if(activeTab==='growth')renderGrowth();
+});
+
+document.getElementById('btnSwitch').addEventListener('click',()=>{
+  const others=db.children.filter(c=>c.id!==db.currentChildId);
+  if(!others.length)return;
+  openForm('切换宝宝',[{name:'id',label:'选择',type:'select',value:others[0].id,
+    options:others.map(c=>({value:c.id,label:c.name}))}],d=>{
+    db.currentChildId=d.id;saveDB();renderAll();
+  });
+});
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act],[data-growth],[data-health],[data-del-growth],[data-del-ill],[data-del-vax],[data-del-mile],[data-del-child],[data-switch],[data-vax],[data-tooth],[data-mile]');
+  if(!t)return;
+  const d=t.dataset;
+
+  if(d.act==='addChild')return addChild();
+  if(d.act==='addGrowth')return addGrowth();
+  if(d.act==='addIllness')return addIllness();
+  if(d.act==='addTooth')return addTooth();
+  if(d.act==='goMile'){healthTab='mile';document.querySelector('[data-tab="health"]').click();return;}
+  if(d.act==='pickAvatar')return pickAvatar(d.avatarChild||null);
+  if(d.act==='clearAvatar'){
+    const c=db.children.find(x=>x.id===d.avatarChild);
+    if(c&&confirm('移除「'+c.name+'」的头像？')){
+      delete c.avatar;saveDB();renderAll();
+    }
+    return;
+  }
+  if(d.act==='importStd')return importStandards();
+  if(d.act==='clearStd'){localStorage.removeItem(STD_KEY);standards=null;renderAll();return;}
+  if(d.act==='export')return exportData();
+  if(d.act==='import')return importData();
+  if(d.act==='dlIcon192')return downloadIcon(192);
+  if(d.act==='dlIcon512')return downloadIcon(512);
+  if(d.act==='dlManifest')return downloadManifest();
+  if(d.act==='dlSW')return downloadSW();
+
+  if(d.growth){growthType=d.growth;renderGrowth();return;}
+  if(d.health){healthTab=d.health;renderHealth();return;}
+
+  if(d.delGrowth){
+    if(confirm('删除这条测量记录？')){db.growth=db.growth.filter(x=>x.id!==d.delGrowth);saveDB();renderAll();}
+    return;
+  }
+  if(d.delIll){
+    if(confirm('删除这条生病记录？')){db.illnesses=db.illnesses.filter(x=>x.id!==d.delIll);saveDB();renderAll();}
+    return;
+  }
+  if(d.delVax){
+    if(confirm('撤销这条接种记录？')){db.vaccines=db.vaccines.filter(x=>x.id!==d.delVax);saveDB();renderAll();}
+    return;
+  }
+  if(d.delMile){
+    if(confirm('删除这条里程碑记录？')){db.milestones=db.milestones.filter(x=>x.id!==d.delMile);saveDB();renderAll();}
+    return;
+  }
+  if(d.delChild){
+    const c=db.children.find(x=>x.id===d.delChild);
+    if(confirm('删除「'+c.name+'」及其全部记录？此操作不可恢复。')){
+      db.children=db.children.filter(x=>x.id!==d.delChild);
+      ['growth','vaccines','illnesses','teeth','milestones'].forEach(k=>{db[k]=db[k].filter(x=>x.childId!==d.delChild);});
+      if(db.currentChildId===d.delChild)db.currentChildId=db.children[0]?db.children[0].id:null;
+      saveDB();renderAll();
+    }
+    return;
+  }
+  if(d.switch){db.currentChildId=d.switch;saveDB();renderAll();return;}
+
+  if(d.vax){
+    const c=curChild();if(!c)return;
+    openForm('记录接种：'+d.vax,[
+      {name:'date',label:'接种日期',type:'date',value:today()},
+      {name:'note',label:'备注（可选）',type:'text',placeholder:'如：批号、接种门诊'}
+    ],v=>{
+      if(!v.date)return '请选择日期';
+      db.vaccines.push({id:uid(),childId:c.id,key:d.vax,date:v.date,note:v.note});
+      saveDB();renderAll();
+    });
+    return;
+  }
+
+  if(d.mile){
+    const c=curChild();if(!c)return;
+    const m=MILESTONES.find(x=>x.k===d.mile);
+    openForm('记录里程碑：'+(m?m.n:d.mile),[
+      {name:'date',label:'达成日期',type:'date',value:today()},
+      {name:'note',label:'备注（可选）',type:'text',placeholder:'如：第一次独立坐稳'}
+    ],v=>{
+      if(!v.date)return '请选择日期';
+      db.milestones.push({id:uid(),childId:c.id,key:d.mile,date:v.date,note:v.note});
+      saveDB();renderAll();
+    });
+    return;
+  }
+
+  if(d.tooth){
+    const c=curChild();if(!c)return;
+    const exist=db.teeth.find(x=>x.childId===c.id&&x.tooth===d.tooth);
+    if(exist){
+      if(confirm('撤销「'+d.tooth+'」的出牙记录？')){db.teeth=db.teeth.filter(x=>x.id!==exist.id);saveDB();renderAll();}
+      return;
+    }
+    openForm('记录出牙：'+d.tooth,[
+      {name:'date',label:'萌出日期',type:'date',value:today()}
+    ],v=>{
+      if(!v.date)return '请选择日期';
+      db.teeth.push({id:uid(),childId:c.id,tooth:d.tooth,date:v.date});
+      saveDB();renderAll();
+    });
+    return;
+  }
+});
+
+/* ============ 业务操作 ============ */
+function addChild(){
+  openForm('添加宝宝',[
+    {name:'name',label:'姓名 / 小名',type:'text',placeholder:'如：小满'},
+    {name:'birthDate',label:'出生日期',type:'date',value:today()},
+    {name:'sex',label:'性别',type:'select',value:'male',options:[{value:'male',label:'男'},{value:'female',label:'女'}]}
+  ],v=>{
+    if(!v.name)return '请填写姓名';
+    if(!v.birthDate)return '请选择出生日期';
+    const c={id:uid(),name:v.name,birthDate:v.birthDate,sex:v.sex};
+    db.children.push(c);
+    if(!db.currentChildId)db.currentChildId=c.id;
+    saveDB();renderAll();
+  });
+}
+
+function addGrowth(){
+  const c=curChild();if(!c)return addChild();
+  openForm('添加测量记录',[
+    {name:'date',label:'测量日期',type:'date',value:today()},
+    {name:'height',label:'身高 / 身长（cm）',type:'number',placeholder:'如 75.5'},
+    {name:'weight',label:'体重（kg）',type:'number',placeholder:'如 9.6'},
+    {name:'headCirc',label:'头围（cm，可选）',type:'number',placeholder:'如 45.0'},
+    {name:'note',label:'备注（可选）',type:'text'}
+  ],v=>{
+    if(!v.date)return '请选择日期';
+    if(!v.height&&!v.weight)return '身高和体重至少填一项';
+    db.growth.push({id:uid(),childId:c.id,date:v.date,
+      height:v.height,weight:v.weight,headCirc:v.headCirc,note:v.note});
+    saveDB();renderAll();
+  });
+}
+
+function addIllness(){
+  const c=curChild();if(!c)return addChild();
+  openForm('添加生病记录',[
+    {name:'startDate',label:'开始日期',type:'date',value:today()},
+    {name:'endDate',label:'痊愈日期（可选）',type:'date'},
+    {name:'symptoms',label:'症状',type:'text',placeholder:'如：发热、咳嗽、腹泻'},
+    {name:'temp',label:'最高体温（℃，可选）',type:'number',placeholder:'如 38.5'},
+    {name:'doctor',label:'是否就医',type:'select',value:'no',options:[{value:'no',label:'未就医'},{value:'yes',label:'已就医'}]},
+    {name:'meds',label:'用药（可选）',type:'text'},
+    {name:'note',label:'备注（可选）',type:'textarea'}
+  ],v=>{
+    if(!v.startDate)return '请选择开始日期';
+    if(!v.symptoms)return '请填写症状';
+    db.illnesses.push({id:uid(),childId:c.id,startDate:v.startDate,endDate:v.endDate,
+      symptoms:v.symptoms,temp:v.temp,doctor:v.doctor==='yes',meds:v.meds,note:v.note});
+    saveDB();renderAll();
+  });
+}
+
+function addTooth(){
+  const c=curChild();if(!c)return addChild();
+  const got={};
+  db.teeth.filter(x=>x.childId===c.id).forEach(x=>{got[x.tooth]=1;});
+  const free=TEETH.filter(t=>!got[t]);
+  if(!free.length)return alert('20 颗乳牙都已记录完成');
+  openForm('记录出牙',[
+    {name:'tooth',label:'牙位',type:'select',value:free[0],options:free.map(t=>({value:t,label:t}))},
+    {name:'date',label:'萌出日期',type:'date',value:today()}
+  ],v=>{
+    if(!v.date)return '请选择日期';
+    db.teeth.push({id:uid(),childId:c.id,tooth:v.tooth,date:v.date});
+    saveDB();renderAll();
+  });
+}
+
+/* ============ 导入导出 ============ */
+function exportData(){
+  downloadBlob(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),'成长记录备份_'+today()+'.json');
+}
+
+function importData(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=()=>{
+    const f=inp.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const data=JSON.parse(rd.result);
+        if(!data.children||!Array.isArray(data.children))throw new Error('格式不正确');
+        if(!confirm('导入将覆盖当前全部数据，确定继续？'))return;
+        db=data;
+        ['children','growth','vaccines','illnesses','teeth','milestones'].forEach(k=>{if(!Array.isArray(db[k]))db[k]=[];});
+        if(!db.currentChildId&&db.children[0])db.currentChildId=db.children[0].id;
+        saveDB();renderAll();
+        alert('导入成功');
+      }catch(err){alert('导入失败：'+err.message);}
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+
+function importStandards(){
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='.json,application/json';
+  inp.onchange=()=>{
+    const f=inp.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{
+      try{
+        const data=JSON.parse(rd.result);
+        const valid=type=>data[type]&&['male','female'].some(s=>Array.isArray(data[type][s])&&data[type][s].length);
+        if(!valid('height')&&!valid('weight'))throw new Error('未找到 height 或 weight 数据');
+        ['height','weight'].forEach(type=>{
+          if(!data[type])return;
+          ['male','female'].forEach(sex=>{
+            if(!Array.isArray(data[type][sex]))return;
+            data[type][sex].forEach(b=>{
+              if(typeof b.m!=='number'||typeof b.p50!=='number')throw new Error(type+'/'+sex+' 中缺少 m 或 p50 字段');
+            });
+            data[type][sex].sort((a,b)=>a.m-b.m);
+          });
+        });
+        standards=data;
+        localStorage.setItem(STD_KEY,JSON.stringify(data));
+        renderAll();
+        alert('标准数据导入成功');
+      }catch(err){alert('导入失败：'+err.message);}
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ============ 启动 ============ */
+renderAll();
+
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
